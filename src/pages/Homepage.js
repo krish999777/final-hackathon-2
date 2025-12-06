@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addDonation,
   addRequest,
@@ -7,6 +7,7 @@ import {
   getHospitals,
   getSession,
   isCompatible,
+  syncFromBackend,
 } from '../services/mockApi';
 
 const bloodTypes = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
@@ -19,6 +20,12 @@ const cityCoordinates = {
 };
 
 const getCoordsForCity = (city) => cityCoordinates[city?.toLowerCase()] || null;
+const cityNames = {
+  pune: 'Pune',
+  mumbai: 'Mumbai',
+  nagpur: 'Nagpur',
+  delhi: 'Delhi',
+};
 
 const Homepage = () => {
   const [session] = useState(() => getSession());
@@ -32,8 +39,6 @@ const Homepage = () => {
     bloodType: 'O+',
     units: 2,
     city: '',
-    hospital: '',
-    readyIn: 'Available now',
     contact: '',
   });
 
@@ -53,12 +58,35 @@ const Homepage = () => {
   const [bloodFilter, setBloodFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [leafletReady, setLeafletReady] = useState(false);
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markerRef = useRef(null);
 
   useEffect(() => {
-    const seeded = bootstrapStore();
-    setInventory(seeded.inventory);
-    setRequests(seeded.requests);
-    setHospitals(seeded.hospitals || getHospitals());
+    const load = async () => {
+      const seeded = bootstrapStore();
+      setInventory(seeded.inventory);
+      setRequests(seeded.requests);
+      setHospitals(seeded.hospitals || getHospitals());
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!window.L) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => setLeafletReady(true);
+      document.body.appendChild(script);
+    } else {
+      setLeafletReady(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -73,6 +101,77 @@ const Homepage = () => {
       { enableHighAccuracy: false, timeout: 5000 },
     );
   }, []);
+
+  useEffect(() => {
+    if (!userPosition) return;
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const R = 6371;
+    let nearest = null;
+    let nearestDist = Number.MAX_VALUE;
+    Object.entries(cityCoordinates).forEach(([key, coords]) => {
+      const dLat = toRad(coords.lat - userPosition.lat);
+      const dLng = toRad(coords.lng - userPosition.lng);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(userPosition.lat)) *
+          Math.cos(toRad(coords.lat)) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const d = Math.round(R * c);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = key;
+      }
+    });
+    const fallbackLabel = userPosition
+      ? `Lat ${userPosition.lat.toFixed(3)}, Lng ${userPosition.lng.toFixed(3)}`
+      : '';
+    const friendlyName = nearest ? cityNames[nearest] || nearest : fallbackLabel;
+    if (friendlyName) {
+      setDonationForm((prev) => (prev.city ? prev : { ...prev, city: friendlyName }));
+      setRequestForm((prev) => (prev.city ? prev : { ...prev, city: friendlyName }));
+      setCityFilter((prev) => prev || friendlyName);
+    }
+
+    if (leafletReady && mapRef.current && window.L) {
+      const centerCoords = getCoordsForCity(nearest) || userPosition;
+      if (centerCoords) {
+        if (!mapInstance.current) {
+          mapInstance.current = window.L.map(mapRef.current).setView([centerCoords.lat, centerCoords.lng], 12);
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+          }).addTo(mapInstance.current);
+        } else {
+          mapInstance.current.setView([centerCoords.lat, centerCoords.lng], 12);
+        }
+        if (markerRef.current) {
+          mapInstance.current.removeLayer(markerRef.current);
+        }
+        markerRef.current = window.L.marker([centerCoords.lat, centerCoords.lng]).addTo(mapInstance.current);
+      }
+    }
+  }, [userPosition, leafletReady]);
+
+  useEffect(() => {
+    const center =
+      userPosition ||
+      (donationForm.city ? getCoordsForCity(donationForm.city) : null) ||
+      (cityFilter ? getCoordsForCity(cityFilter) : null);
+    if (!leafletReady || !mapRef.current || !center || !window.L) return;
+    if (!mapInstance.current) {
+      mapInstance.current = window.L.map(mapRef.current).setView([center.lat, center.lng], 13);
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(mapInstance.current);
+    } else {
+      mapInstance.current.setView([center.lat, center.lng], 13);
+    }
+    if (markerRef.current) {
+      mapInstance.current.removeLayer(markerRef.current);
+    }
+    markerRef.current = window.L.marker([center.lat, center.lng]).addTo(mapInstance.current);
+  }, [leafletReady, donationForm.city, cityFilter, userPosition]);
 
   const totalUnits = useMemo(
     () => inventory.reduce((sum, item) => sum + Number(item.units || 0), 0),
@@ -157,7 +256,7 @@ const Homepage = () => {
     event.preventDefault();
     const { inventory: updatedInventory } = addDonation(donationForm, session);
     setInventory(updatedInventory);
-    setDonationForm((prev) => ({ ...prev, city: '', hospital: '', contact: '' }));
+    setDonationForm((prev) => ({ ...prev, city: '', contact: '' }));
   };
 
   const handleRequestSubmit = (event) => {
@@ -170,7 +269,8 @@ const Homepage = () => {
 
   const isLoggedIn = Boolean(session);
   const isHospital = session?.role === 'Hospital';
-  const isIndividual = session && session.role !== 'Hospital';
+  const isIndividualDonor = session?.role === 'Individual donor';
+  const canRequest = isLoggedIn && !isIndividualDonor;
 
   if (!isLoggedIn) {
     return (
@@ -180,8 +280,8 @@ const Homepage = () => {
             <p className="eyebrow">BloodLink Console</p>
             <h1>Login to donate, receive, or search blood.</h1>
             <p className="lead">
-              Access is locked until you sign in. Individuals can donate or request; hospitals can
-              search, filter, and view other hospital data.
+              Access is locked until you sign in. Individuals can donate; hospitals can search,
+              filter, and view other hospital data.
             </p>
             <div className="hero__actions">
               <a className="btn btn--primary" href="/login">
@@ -236,16 +336,18 @@ const Homepage = () => {
             Hi {session.name || 'there'}, donate, receive, or search nearby blood after login.
           </h1>
           <p className="lead">
-            Individuals can donate or request. Hospitals can search, filter, and view other hospital
-            data with location-aware sorting.
+            Individuals can donate. Hospitals can search, filter, and view other hospital data with
+            location-aware sorting.
           </p>
           <div className="hero__actions">
             {session ? (
               <>
-                <a className="btn btn--primary" href="#request">
-                  {isHospital ? 'Find blood' : 'Request blood'}
-                </a>
-                {isIndividual && (
+                {canRequest && (
+                  <a className="btn btn--primary" href="#request">
+                    {isHospital ? 'Find blood' : 'Request blood'}
+                  </a>
+                )}
+                {isIndividualDonor && (
                   <a className="btn btn--ghost" href="#donate">
                     Donate blood
                   </a>
@@ -277,27 +379,25 @@ const Homepage = () => {
         </div>
       </section>
 
-      <section className="grid" id="login">
-        <div className="panel panel--accent">
-          <div className="panel__header">
-            <div>
-              <p className="eyebrow">Identity check</p>
-              <h3>Login required</h3>
-              <p className="hint">Use the login page to continue. Roles decide available actions.</p>
-            </div>
-            {session ? (
-              <div className="pill pill--success">Signed in as {session.role}</div>
-            ) : (
+      {!session && (
+        <section className="grid" id="login">
+          <div className="panel panel--accent">
+            <div className="panel__header">
+              <div>
+                <p className="eyebrow">Identity check</p>
+                <h3>Login required</h3>
+                <p className="hint">Use the login page to continue. Roles decide available actions.</p>
+              </div>
               <div className="pill">Not signed in</div>
-            )}
+            </div>
+            <a className="btn btn--primary" href="/login">
+              Go to login
+            </a>
           </div>
-          <a className="btn btn--primary" href="/login">
-            Go to login
-          </a>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {session && isIndividual && (
+      {session && isIndividualDonor && (
         <section className="grid grid--two" id="donate">
           <div className="panel">
             <div className="panel__header">
@@ -341,33 +441,12 @@ const Homepage = () => {
                     type="text"
                     value={donationForm.city}
                     onChange={(e) => setDonationForm({ ...donationForm, city: e.target.value })}
-                    placeholder="Pune, Mumbai..."
+                    placeholder="Auto-detected city or type manually"
                     required
-                  />
-                </label>
-                <label>
-                  Hospital / collection center
-                  <input
-                    type="text"
-                    value={donationForm.hospital}
-                    onChange={(e) => setDonationForm({ ...donationForm, hospital: e.target.value })}
-                    placeholder="Trinity Care"
                   />
                 </label>
               </div>
               <div className="form__row">
-                <label>
-                  Ready in
-                  <select
-                    value={donationForm.readyIn}
-                    onChange={(e) => setDonationForm({ ...donationForm, readyIn: e.target.value })}
-                  >
-                    <option>Available now</option>
-                    <option>Within 2 hours</option>
-                    <option>Courier 4 hours</option>
-                    <option>Same day</option>
-                  </select>
-                </label>
                 <label>
                   Contact
                   <input
@@ -382,6 +461,51 @@ const Homepage = () => {
                 Publish to inventory
               </button>
             </form>
+          </div>
+
+          <div className="panel panel--muted map-panel">
+            <div className="panel__header">
+              <div>
+                <p className="eyebrow">Location</p>
+                <h3>Nearest city detected</h3>
+                <p className="hint">
+                  We try to detect your city automatically. You can still adjust it above if needed.
+                </p>
+              </div>
+              <div className="pill pill--ghost">
+                {locationEnabled ? 'Using location' : 'Enter city manually'}
+              </div>
+            </div>
+            <div className="map-card">
+              <div
+                id="map"
+                ref={mapRef}
+                style={{ height: '220px', width: '100%', borderRadius: '12px' }}
+              />
+              <p className="hint" style={{ marginTop: '0.5rem' }}>
+                {donationForm.city || 'Detecting location...'}{' '}
+                {userPosition ? `(Lat ${userPosition.lat.toFixed(3)}, Lng ${userPosition.lng.toFixed(3)})` : ''}
+              </p>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                        setLocationEnabled(true);
+                        setLocationError('');
+                      },
+                      () => setLocationError('Location blocked; enter city manually.'),
+                      { enableHighAccuracy: true, timeout: 5000 },
+                    );
+                  }
+                }}
+              >
+                Use my location
+              </button>
+            </div>
           </div>
 
           <div className="panel panel--muted" id="inventory">
@@ -439,7 +563,7 @@ const Homepage = () => {
                         {item.units} units · {item.hospital}
                       </h4>
                       <p className="hint">
-                        {item.city} · {item.readyIn} · {item.status}
+                        {item.city} · {item.status}
                       </p>
                     </div>
                     <div className="inventory-row__contact">
@@ -514,7 +638,7 @@ const Homepage = () => {
                         {item.units} units · {item.hospital}
                       </h4>
                       <p className="hint">
-                        {item.city} · {item.readyIn} · {item.status}
+                        {item.city} · {item.status}
                       </p>
                     </div>
                     <div className="inventory-row__contact">
@@ -564,7 +688,7 @@ const Homepage = () => {
         </section>
       )}
 
-      {session && (
+      {session && canRequest && (
         <section className="grid grid--two" id="request">
           <div className="panel">
             <div className="panel__header">
@@ -691,9 +815,7 @@ const Homepage = () => {
                           <span className="pill pill--success">{match.units} units</span>
                         </div>
                         <h4>{match.hospital}</h4>
-                        <p className="hint">
-                          {match.city} · {match.readyIn}
-                        </p>
+                        <p className="hint">{match.city}</p>
                         <p className="match-card__contact">Contact: {match.contact}</p>
                       </div>
                     ))
@@ -754,7 +876,7 @@ const Homepage = () => {
                       {item.units} units · {item.hospital}
                     </h4>
                     <p className="hint">
-                      {item.city} · {item.readyIn} · {item.status}
+                      {item.city} · {item.status}
                     </p>
                   </div>
                   <div className="inventory-row__contact">

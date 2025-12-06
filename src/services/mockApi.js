@@ -51,6 +51,18 @@ const seedData = {
       createdAt: '2024-02-08T09:00:00Z',
       status: 'Ready',
     },
+    {
+      id: 'don-005',
+      bloodType: 'AB+',
+      units: 2,
+      city: 'Pune',
+      hospital: 'LifeLine ICU',
+      readyIn: 'Same day',
+      contact: '+91 90123 45678',
+      addedBy: 'Hospital partner',
+      createdAt: '2024-02-12T10:00:00Z',
+      status: 'Ready',
+    },
   ],
   requests: [
     {
@@ -74,6 +86,17 @@ const seedData = {
       requestedBy: 'Lotus Children Care',
       contact: '+91 98111 78542',
       createdAt: '2024-02-11T05:00:00Z',
+    },
+    {
+      id: 'req-103',
+      bloodType: 'B+',
+      units: 3,
+      city: 'Nagpur',
+      urgency: 'Same day',
+      clinicalReason: 'Trauma case',
+      requestedBy: 'Central City Hospital',
+      contact: '+91 90213 77891',
+      createdAt: '2024-02-12T09:00:00Z',
     },
   ],
   hospitals: [
@@ -104,6 +127,24 @@ const seedData = {
       email: 'supply@centralcity.org',
       readyTypes: ['A+', 'AB+'],
     },
+    {
+      id: 'hosp-004',
+      name: 'LifeLine ICU',
+      city: 'Pune',
+      bankPartner: 'Metro Blood Bank',
+      contact: '+91 90123 45678',
+      email: 'ops@lifelineicu.org',
+      readyTypes: ['AB+', 'O-'],
+    },
+    {
+      id: 'hosp-005',
+      name: 'Sunrise Hospital',
+      city: 'Delhi',
+      bankPartner: 'Delhi Blood Center',
+      contact: '+91 97622 55830',
+      email: 'dispatch@sunrisehosp.in',
+      readyTypes: ['O-', 'A+'],
+    },
   ],
 };
 
@@ -131,6 +172,22 @@ const readStore = () => {
 
 export const bootstrapStore = () => readStore();
 
+export const syncFromBackend = async () => {
+  try {
+    const res = await fetch('/data/db.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    writeStore({
+      inventory: data.inventory || [],
+      requests: data.requests || [],
+      hospitals: data.hospitals || [],
+    });
+    return data;
+  } catch (err) {
+    return null;
+  }
+};
+
 export const getInventory = () => readStore().inventory;
 
 export const getRequests = () => readStore().requests;
@@ -140,6 +197,10 @@ export const getHospitals = () => readStore().hospitals;
 export const getSession = () => {
   const raw = localStorage.getItem(SESSION_KEY);
   return raw ? JSON.parse(raw) : null;
+};
+
+export const clearSession = () => {
+  localStorage.removeItem(SESSION_KEY);
 };
 
 export const saveSession = ({ name, email, role, organization, contact, hospitalAccess }) => {
@@ -179,7 +240,7 @@ export const addDonation = (payload, actor) => {
     units: Number(payload.units),
     city: payload.city,
     hospital: payload.hospital || actor?.organization || actor?.name || 'Verified donor',
-    readyIn: payload.readyIn,
+    readyIn: payload.readyIn || 'Available',
     contact: payload.contact || actor?.email || 'On file',
     addedBy: actor ? `${actor.name} (${actor.role})` : 'Guest',
     createdAt: new Date().toISOString(),

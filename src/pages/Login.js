@@ -48,7 +48,7 @@ const Login = () => {
 
           <form className="form" onSubmit={handleSubmit}>
             <div className="role-switch">
-              {['Hospital', 'Individual donor', 'Receiver', 'Blood bank'].map((roleOption) => (
+              {['Hospital', 'Individual donor'].map((roleOption) => (
                 <button
                   type="button"
                   key={roleOption}
@@ -58,6 +58,10 @@ const Login = () => {
                       ...form,
                       role: roleOption,
                       hospitalAccess: roleOption === 'Hospital' ? true : false,
+                      // clear fields that don't apply
+                      name: roleOption === 'Hospital' ? '' : form.name,
+                      email: roleOption === 'Hospital' ? '' : form.email,
+                      organization: roleOption === 'Hospital' ? form.organization : '',
                     })
                   }
                 >
@@ -66,48 +70,54 @@ const Login = () => {
               ))}
             </div>
 
-            <div className="form__row">
-              <label>
-                Full name
-                <input
-                  type="text"
-                  value={form.name}
-                  required
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Dr. Aditi Sharma"
-                />
-              </label>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={form.email}
-                  required
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="name@hospital.org"
-                />
-              </label>
-            </div>
-
-            <label>
-              Organization (optional)
-              <input
-                type="text"
-                value={form.organization}
-                onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                placeholder="LifeCare ICU / NGO / Bank name"
-              />
-            </label>
+            {form.role === 'Individual donor' && (
+              <div className="form__row">
+                <label>
+                  Full name
+                  <input
+                    type="text"
+                    value={form.name}
+                    required
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Full Name"
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={form.email}
+                    required
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="abc@gmail.com"
+                  />
+                </label>
+              </div>
+            )}
 
             {form.role === 'Hospital' && (
-              <label className="pill pill--ghost pill--checkbox">
-                <input
-                  type="checkbox"
-                  checked={form.hospitalAccess}
-                  onChange={(e) => setForm({ ...form, hospitalAccess: e.target.checked })}
-                />
-                Enable hospital console (search/filter + hospital data)
-              </label>
+              <div className="form__row">
+                <label>
+                  Hospital name
+                  <input
+                    type="text"
+                    value={form.organization}
+                    required
+                    onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                    placeholder="Hospital / Bank name"
+                  />
+                </label>
+                <label>
+                  Contact email
+                  <input
+                    type="email"
+                    value={form.email}
+                    required
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="ops@hospital.org"
+                  />
+                </label>
+              </div>
             )}
 
             <label>
@@ -116,17 +126,17 @@ const Login = () => {
                 type="text"
                 value={form.contact}
                 onChange={(e) => setForm({ ...form, contact: e.target.value })}
-                placeholder="+91 90000 00000"
+                placeholder="+91 123456789"
               />
             </label>
 
             <button type="submit" className="btn btn--primary">
-              Save session and continue
+              Continue
             </button>
           </form>
         </div>
 
-        <div className="panel panel--muted">
+        {/* <div className="panel panel--muted">
           <div className="panel__header">
             <div>
               <p className="eyebrow">Banks</p>
@@ -164,7 +174,7 @@ const Login = () => {
               Supabase, or Firebase Auth/Firestore).
             </p>
           </div>
-        </div>
+        </div> */}
       </section>
     </main>
   );
