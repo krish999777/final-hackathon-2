@@ -25,9 +25,12 @@ const Navbar = () => {
           <a href="/about" className="navbar__link">
             About
           </a>
+          <a href="/login" className="navbar__link">
+            Login
+          </a>
         </nav>
         <div className="navbar__actions">
-          <a className="navbar__ghost" href="/#login">
+          <a className="navbar__ghost" href="/login">
             Log in / Verify
           </a>
           <a className="navbar__cta" href="/#request">

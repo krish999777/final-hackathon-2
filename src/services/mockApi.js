@@ -76,6 +76,35 @@ const seedData = {
       createdAt: '2024-02-11T05:00:00Z',
     },
   ],
+  hospitals: [
+    {
+      id: 'hosp-001',
+      name: 'Trinity Care',
+      city: 'Pune',
+      bankPartner: 'Red Cross Bank',
+      contact: '+91 90455 21011',
+      email: 'coord@trinitycare.org',
+      readyTypes: ['O+', 'A+', 'B+'],
+    },
+    {
+      id: 'hosp-002',
+      name: 'Civic Medical Center',
+      city: 'Mumbai',
+      bankPartner: 'City Blood Center',
+      contact: '+91 99812 00473',
+      email: 'blooddesk@civic.in',
+      readyTypes: ['B-', 'O-'],
+    },
+    {
+      id: 'hosp-003',
+      name: 'Central City Hospital',
+      city: 'Nagpur',
+      bankPartner: 'Regional Bloodline',
+      contact: '+91 90213 77891',
+      email: 'supply@centralcity.org',
+      readyTypes: ['A+', 'AB+'],
+    },
+  ],
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -88,7 +117,13 @@ const writeStore = (store) => {
 const readStore = () => {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    let mutated = false;
+    if (!parsed.hospitals) {
+      parsed.hospitals = clone(seedData.hospitals);
+      mutated = true;
+    }
+    return mutated ? writeStore(parsed) : parsed;
   }
 
   return writeStore(clone(seedData));
@@ -100,18 +135,22 @@ export const getInventory = () => readStore().inventory;
 
 export const getRequests = () => readStore().requests;
 
+export const getHospitals = () => readStore().hospitals;
+
 export const getSession = () => {
   const raw = localStorage.getItem(SESSION_KEY);
   return raw ? JSON.parse(raw) : null;
 };
 
-export const saveSession = ({ name, email, role, organization }) => {
+export const saveSession = ({ name, email, role, organization, contact, hospitalAccess }) => {
   const session = {
     id: `user-${Date.now()}`,
     name,
     email,
     role,
     organization,
+    contact,
+    hospitalAccess: role === 'Hospital' ? hospitalAccess ?? true : Boolean(hospitalAccess),
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
@@ -176,4 +215,12 @@ export const addRequest = (payload, actor) => {
 export const findMatches = (neededType) => {
   const store = readStore();
   return store.inventory.filter((item) => isCompatible(item.bloodType, neededType));
+};
+
+export const findHospitalsByType = (neededType) => {
+  const store = readStore();
+  if (!neededType) return store.hospitals || [];
+  return (store.hospitals || []).filter((hospital) =>
+    hospital.readyTypes?.some((type) => isCompatible(type, neededType)),
+  );
 };
