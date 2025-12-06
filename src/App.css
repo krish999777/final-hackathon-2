@@ -1,20 +1,20 @@
 :root {
-  --bg: #0b0306;
-  --panel: #13070c;
-  --panel-muted: #15090f;
-  --border: rgba(255, 255, 255, 0.08);
-  --muted: #c8c1c3;
-  --text: #f7f5f5;
+  --bg: #f8f7f6;
+  --panel: #ffffff;
+  --panel-muted: #f4f1f2;
+  --border: rgba(17, 7, 10, 0.08);
+  --muted: #6f6066;
+  --text: #1a1014;
   --accent: #c1121f;
   --accent-2: #f45d48;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --shadow: 0 12px 36px rgba(18, 8, 11, 0.08);
 }
 
 .App {
   min-height: 100vh;
-  background: radial-gradient(circle at 20% 10%, rgba(193, 18, 31, 0.2), transparent 25%),
-    radial-gradient(circle at 85% 15%, rgba(244, 93, 72, 0.16), transparent 22%),
-    linear-gradient(180deg, #0e0408 0%, #060103 100%);
+  background: radial-gradient(circle at 18% 12%, rgba(193, 18, 31, 0.08), transparent 28%),
+    radial-gradient(circle at 88% 14%, rgba(244, 93, 72, 0.07), transparent 25%),
+    linear-gradient(180deg, #fcfbfa 0%, #f4f1f2 100%);
   color: var(--text);
   font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   display: flex;
@@ -68,8 +68,8 @@ h4 {
 }
 
 .hero {
-  background: linear-gradient(125deg, rgba(193, 18, 31, 0.16), rgba(20, 7, 12, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(244, 241, 242, 0.95));
+  border: 1px solid var(--border);
   border-radius: 22px;
   padding: 2.4rem;
   box-shadow: var(--shadow);
@@ -95,7 +95,7 @@ h4 {
 }
 
 .hero__stats {
-  background: rgba(255, 255, 255, 0.02);
+  background: #faf7f8;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.2rem;
@@ -104,8 +104,8 @@ h4 {
 }
 
 .stat {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #ffffff;
+  border: 1px solid rgba(17, 7, 10, 0.08);
   border-radius: 12px;
   padding: 0.85rem 1rem;
 }
@@ -148,7 +148,7 @@ h4 {
 }
 
 .panel--accent {
-  background: linear-gradient(140deg, rgba(193, 18, 31, 0.14), rgba(19, 7, 12, 0.94));
+  background: linear-gradient(140deg, rgba(193, 18, 31, 0.08), rgba(255, 255, 255, 0.9));
 }
 
 .panel--muted {
@@ -187,7 +187,7 @@ h4 {
 }
 
 .btn--ghost {
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
   border-color: var(--border);
   color: var(--text);
 }
@@ -219,8 +219,8 @@ input,
 select,
 textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(17, 7, 10, 0.12);
   border-radius: 12px;
   padding: 0.78rem 0.9rem;
   color: var(--text);
@@ -231,9 +231,9 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(193, 18, 31, 0.45);
-  box-shadow: 0 0 0 3px rgba(193, 18, 31, 0.25);
+  background: #fff7f8;
+  border-color: rgba(193, 18, 31, 0.35);
+  box-shadow: 0 0 0 3px rgba(193, 18, 31, 0.16);
 }
 
 .inventory-grid {
@@ -243,10 +243,10 @@ textarea:focus {
 }
 
 .inventory-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(17, 7, 10, 0.08);
   border-radius: 12px;
   padding: 0.9rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: #ffffff;
 }
 
 .inventory-card__type {
@@ -257,7 +257,7 @@ textarea:focus {
 
 .inventory-card__units {
   margin: 0.12rem 0;
-  color: #ffffff;
+  color: #1a1014;
   font-weight: 700;
 }
 
@@ -272,8 +272,8 @@ textarea:focus {
   gap: 0.35rem;
   padding: 0.32rem 0.75rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #fff7f8;
+  border: 1px solid rgba(193, 18, 31, 0.18);
   color: var(--text);
   font-weight: 700;
   text-transform: uppercase;
@@ -282,7 +282,7 @@ textarea:focus {
 }
 
 .pill--ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
 }
 
 .pill--success {
@@ -312,10 +312,10 @@ textarea:focus {
 }
 
 .match-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(17, 7, 10, 0.08);
   border-radius: 14px;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: #ffffff;
 }
 
 .match-card__header {
@@ -340,13 +340,13 @@ textarea:focus {
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
   align-items: start;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(17, 7, 10, 0.08);
   padding-bottom: 0.8rem;
 }
 
 .timeline__reason {
   margin: 0.25rem 0 0;
-  color: #f3f4f6;
+  color: #3b2c32;
 }
 
 .inventory-list {
@@ -359,7 +359,7 @@ textarea:focus {
   grid-template-columns: auto 1fr auto;
   gap: 0.8rem;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(17, 7, 10, 0.08);
   padding-bottom: 0.6rem;
 }
 
@@ -394,7 +394,7 @@ textarea:focus {
 
 .card {
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(17, 7, 10, 0.08);
   border-radius: 14px;
   padding: 1.2rem 1.35rem;
   box-shadow: var(--shadow);
